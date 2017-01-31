@@ -2,66 +2,80 @@
 # Game class is responsible for hold players names
 # and display score
 class Game
-  POINTS_TABLE = [0, 15, 30, 40].freeze
+  TIE_POINTS = 3
+  ADVANTAGE_DIFF_POINTS = 1
+  TIE_WINNER_DIFF_POINTS = 2
+  WINNER_DIFF_POINTS = 4
 
-  attr_reader :player, :adversary
+  attr_reader :players, :first_player, :second_player
 
-  def initialize(player, adversary)
-    @player = player
-    @adversary = adversary
-    @points = Hash.new(0)
+  def initialize(first_player, second_player)
+    @players = {}
+    @first_player = TennisPlayer.new(first_player)
+    @second_player = TennisPlayer.new(second_player)
+
+    set_player_hash(first_player, @first_player)
+    set_player_hash(second_player, @second_player)
   end
 
   def point_won_by(player_name)
-    @points[player_name] += 1
+    players[player_name].point_won
   end
 
   def score
     return 'Deuce' if deuce?
-    return "Advantage #{player_in_advantage}" if advantage?
-    return "#{player_in_advantage} wins" if winner?
-    "#{translate_score(player)}-#{translate_score(adversary)}"
+    return "Advantage #{winning_player_name}" if advantage?
+    return "#{winning_player_name} wins" if winner?
+    "#{first_player.score}-#{second_player.score}"
   end
 
   private
 
-  def translate_score(player_name)
-    POINTS_TABLE[points_by(player_name)]
-  end
-
-  def advantage_stage?
-    points_by_player >= 3 && points_by_adversary >= 3
-  end
-
-  def player_in_advantage
-    points_by_player > points_by_adversary ? player : adversary
+  def tie?
+    first_player_points >= TIE_POINTS && second_player_points >= TIE_POINTS
   end
 
   def deuce?
-    advantage_stage? && difference_between_scores.zero?
+    tie? && difference_between_scores.zero?
   end
 
   def advantage?
-    advantage_stage? && difference_between_scores < 2
+    tie? && difference_between_scores == ADVANTAGE_DIFF_POINTS
   end
 
   def winner?
-    points_by_player >= 4 || points_by_adversary >= 4
+    winner_after_tie? || winner_before_tie?
+  end
+
+  def winner_after_tie?
+    tie? && difference_between_scores == TIE_WINNER_DIFF_POINTS
+  end
+
+  def winner_before_tie?
+    difference_between_scores == WINNER_DIFF_POINTS
+  end
+
+  def winning_player
+    first_player_points > second_player_points ? first_player : second_player
+  end
+
+  def winning_player_name
+    winning_player.name
   end
 
   def difference_between_scores
-    (points_by_player - points_by_adversary).abs
+    (first_player_points - second_player_points).abs
   end
 
-  def points_by_player
-    points_by(player)
+  def first_player_points
+    first_player.points
   end
 
-  def points_by_adversary
-    points_by(adversary)
+  def second_player_points
+    second_player.points
   end
 
-  def points_by(player_name)
-    @points[player_name]
+  def set_player_hash(player_name, player_object)
+    @players[player_name] = player_object
   end
 end
